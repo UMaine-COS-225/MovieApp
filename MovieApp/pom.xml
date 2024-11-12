@@ -1,0 +1,23 @@
+<project>
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.cos225</groupId>
+    <artifactId>MovieApp</artifactId>
+    <version>0.0.1</version>
+
+    <properties>
+        <maven.compiler.source>22</maven.compiler.source>
+        <maven.compiler.target>22</maven.compiler.target>
+    </properties>
+
+
+    <dependencies>
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver-sync</artifactId>
+            <version>4.4.0</version>
+        </dependency>
+    </dependencies>
+
+</project>
