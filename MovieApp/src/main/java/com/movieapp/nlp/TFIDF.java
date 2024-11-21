@@ -2,6 +2,7 @@ package com.movieapp.nlp;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.ArrayList;
 import org.bson.BsonValue;
 
 import com.movieapp.movie.Movie;
@@ -11,8 +12,11 @@ public class TFIDF {
     private HashSet<String> vocabulary = new HashSet<>();
     private HashMap<String, Float> idf = new HashMap<>();
     private HashMap<BsonValue, HashMap<String, Integer>> tf = new HashMap<>();
+    private Processor processor;
 
-    Processor processor = new Processor("src/main/resources/stop_words.txt");
+    public TFIDF(Processor processor) {
+        this.processor = processor;
+    }
 
     public void addSample(BsonValue id, Movie movie) {
         String[] words = processor.processText(movie.getOverview());
@@ -32,7 +36,7 @@ public class TFIDF {
                     count++;
                 }
             }
-            idf.put(word, (float) Math.log((float) tf.size() / count));
+            idf.put(word, (float) Math.log((float) tf.size() + 1/ count + 1));
         }
     }
 
@@ -45,6 +49,18 @@ public class TFIDF {
             return 0;
         }
         return wordCount.get(word) * idf.get(word);
+    }
+
+    public float calculateTFIDF(BsonValue id, String[] words) {
+        float score = 0;
+        for (String word : words) {
+            score += calculateTFIDF(id, word);
+        }
+        return score;
+    }
+
+    public ArrayList<BsonValue> getIds() {
+        return new ArrayList<>(tf.keySet());
     }
 
     
