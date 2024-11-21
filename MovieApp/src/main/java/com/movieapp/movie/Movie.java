@@ -6,12 +6,18 @@ public class Movie {
 
     private String name;
     private String overview;
-    private Float rating;
+    private Double rating;
 
-    public Movie(String name, String overview, Float rating) {
+    public Movie(String name, String overview, Double rating) {
         this.name = name;
         this.overview = overview;
         this.rating = rating;
+    }
+
+    public Movie(Document document) {
+        this.name = document.getString("name");
+        this.overview = document.getString("overview");
+        this.rating = document.getDouble("rating");
     }
 
     public String getName() {
@@ -22,7 +28,7 @@ public class Movie {
         return overview;
     }
 
-    public Float getRating() {
+    public Double getRating() {
         return rating;
     }
 
