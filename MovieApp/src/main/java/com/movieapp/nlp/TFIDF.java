@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import org.bson.BsonValue;
 
 import com.movieapp.movie.Movie;
+import com.movieapp.movie.MovieReview;
 
 public class TFIDF {
 
@@ -18,8 +19,8 @@ public class TFIDF {
         this.processor = processor;
     }
 
-    public void addSample(BsonValue id, Movie movie) {
-        String[] words = processor.processText(movie.getOverview());
+    public void addSample(BsonValue id, String text) {
+        String[] words = processor.processText(text);
         HashMap<String, Integer> wordCount = new HashMap<>();
         for (String word : words) {
             wordCount.put(word, wordCount.getOrDefault(word, 0) + 1);
@@ -36,7 +37,7 @@ public class TFIDF {
                     count++;
                 }
             }
-            idf.put(word, (float) Math.log((float) tf.size() + 1/ count + 1));
+            idf.put(word, (float) Math.log((float) tf.size() + 1 / count + 1));
         }
     }
 
@@ -63,5 +64,4 @@ public class TFIDF {
         return new ArrayList<>(tf.keySet());
     }
 
-    
 }
