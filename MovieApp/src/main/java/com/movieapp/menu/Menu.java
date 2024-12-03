@@ -11,7 +11,9 @@ import org.bson.BsonValue;
 import com.mongodb.client.result.InsertOneResult;
 import com.movieapp.database.Database;
 import com.movieapp.movie.Movie;
+import com.movieapp.movie.MovieReview;
 import com.movieapp.nlp.TFIDF;
+import com.movieapp.nlp.MovieClassifier;
 import com.movieapp.nlp.MovieRecommender;
 import com.movieapp.nlp.Processor;
 
@@ -19,18 +21,23 @@ public class Menu {
 
     private Processor processor = new Processor("src/main/resources/listOfStopWords.txt");
     private TFIDF tfidf = new TFIDF(processor);
+    private MovieClassifier classifier = new MovieClassifier(processor);
 
     /*
-     * This method is called before showing the menu options to the user. It creates the necessary collections in the database.
+     * This method is called before showing the menu options to the user. It creates
+     * the necessary collections in the database.
      * It also parses the necessary CSV files and populatest the collection.
      * 
-     * You would also want to add other features such 
+     * You would also want to add other features such
      */
     public void startUp() {
 
         // Create a collection in the database to store Movie objects
         Database movieDatabase = new Database("movie_app_database", "movie_data");
         movieDatabase.createCollection();
+
+        Database reviewDatabase = new Database("movie_app_database", "movie_reviews");
+        reviewDatabase.createCollection();
 
         // Parse test_movie_metadata.csv
         String csvFile = "src/main/resources/movie_data_test.csv";
@@ -51,7 +58,7 @@ public class Menu {
                 InsertOneResult result = movieDatabase.addToDatabase(movieObject.getDocument());
                 BsonValue id = result.getInsertedId();
 
-                tfidf.addSample(id, movieObject);
+                tfidf.addSample(id, movieObject.getOverview());
 
             }
 
@@ -61,15 +68,41 @@ public class Menu {
             e.printStackTrace();
         }
 
+        // Parse the movie_review_train.csv
+        String reviewCSVFile = "src/main/resources/movie_review_train.csv";
+        String reviewLine;
+
+        try (BufferedReader br = new BufferedReader(new FileReader(reviewCSVFile))) {
+            // Skip the first header line
+            br.readLine();
+
+            while ((reviewLine = br.readLine()) != null) {
+                String[] reviewData = reviewLine.split(delimiter);
+                String review = reviewData[0];
+                String sentiment = reviewData[1];
+
+                MovieReview reviewObject = new MovieReview(review, sentiment);
+                InsertOneResult result = reviewDatabase.addToDatabase(reviewObject.getDocument());
+
+                classifier.addSample(result.getInsertedId(), reviewObject);
+            }
+            classifier.train();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /*
-     * This method is called whenever user selects the Exit option. This method deletes the collection created in the database.
+     * This method is called whenever user selects the Exit option. This method
+     * deletes the collection created in the database.
      */
     public void shutDown() {
 
         Database movieDatabase = new Database("movie_app_database", "movie_data");
         movieDatabase.deleteCollection();
+
+        Database reviewDatabase = new Database("movie_app_database", "movie_reviews");
+        reviewDatabase.deleteCollection();
 
     }
 
@@ -91,7 +124,7 @@ public class Menu {
 
     }
 
-    public void findSimilarMovies(Scanner scanner){            
+    public void findSimilarMovies(Scanner scanner) {
 
         System.out.println("Please enter overview of the movie");
         String movieOverview = scanner.nextLine();
@@ -104,7 +137,7 @@ public class Menu {
         MovieRecommender recommender = new MovieRecommender(processor, tfidf);
         ArrayList<Movie> recommendations = recommender.recommendMovies(movieOverview, numRecommendations);
 
-        for(Movie movie : recommendations){
+        for (Movie movie : recommendations) {
             System.out.println("Name: " + movie.getName());
             System.out.println("Overview: " + movie.getOverview());
             System.out.println("Rating: " + movie.getRating());
@@ -112,38 +145,49 @@ public class Menu {
 
     }
 
+    public void classifyMovieReview(Scanner scanner) {
+
+        System.out.println("Please enter the review of the movie");
+        String review = scanner.nextLine();
+
+        String sentiment = classifier.classify(review);
+        System.out.println("The sentiment of the review is: " + sentiment);
+
+    }
+
     public static void main(String[] args) {
 
         System.out.println("Initializing the movie app...");
-        
-        //Call the startUp method
+
+        // Call the startUp method
         Menu menu = new Menu();
         menu.startUp();
-        
-        // Ideally you want to make this menu an endless loop until the user enters to exit the app.
+
+        // Ideally you want to make this menu an endless loop until the user enters to
+        // exit the app.
         // When they select the option, you call the shutDown method.
         System.out.println("Hello! Welcome to the movie app!");
         Scanner scanner = new Scanner(System.in);
-        
+
         int choice = 0;
 
-        while(choice != 6){
+        while (choice != 6) {
 
             System.out.println("Please select one of the following options ");
             System.out.println("1. Add a movie to the database.");
             System.out.println("2. Get details of a movie from the database.");
             System.out.println("3. Find similar movies.");
-            System.out.println("4. Add movie reviews.");
+            System.out.println("4. Classify movie review.");
             System.out.println("5. Get movie reviews.");
             System.out.println("6. Exit.");
-    
+
             System.out.print("Enter your choice: ");
             if (scanner.hasNextInt()) {
                 choice = scanner.nextInt();
-                scanner.nextLine(); 
+                scanner.nextLine();
             } else {
                 System.out.println("Invalid input. Please enter a number.");
-                scanner.nextLine(); 
+                scanner.nextLine();
                 continue;
             }
             switch (choice) {
@@ -160,19 +204,22 @@ public class Menu {
                     System.out.println("Ok, let's find you some similar movies!");
                     menu.findSimilarMovies(scanner);
                     break;
-                
+                case 4:
+                    System.out.println("Let's try to classify a movie review");
+                    menu.classifyMovieReview(scanner);
+                    break;
+
                 case 6:
                     System.out.println("Exiting the movie app...");
                     menu.shutDown();
                     scanner.close();
-                    break;  
+                    break;
 
                 default:
                     System.out.println("Invalid choice.");
                     break;
             }
         }
-
 
     }
 }
