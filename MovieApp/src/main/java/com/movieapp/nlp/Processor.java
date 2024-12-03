@@ -61,4 +61,8 @@ public class Processor {
         return words;
     }
 
+    public String[] splitTextIntoSentences(String text) {
+        return text.split("\\.");
+    }
+
 }

@@ -5,9 +5,6 @@ import java.util.HashSet;
 import java.util.ArrayList;
 import org.bson.BsonValue;
 
-import com.movieapp.movie.Movie;
-import com.movieapp.movie.MovieReview;
-
 public class TFIDF {
 
     private HashSet<String> vocabulary = new HashSet<>();
